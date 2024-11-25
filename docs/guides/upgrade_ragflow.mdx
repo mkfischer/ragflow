@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 11
 slug: /upgrade_ragflow
 ---
 
@@ -7,57 +7,72 @@ slug: /upgrade_ragflow
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-You can upgrade RAGFlow to the dev version or the latest version:
+Upgrade RAGFlow to `dev-slim`/`dev` or the latest, published release.
 
-- The Dev version (Development version) is the latest, tested Docker image of RAGFlow.
-- The latest version is the most recent, officially published release. For example, `v0.13.0`.
+## Upgrade RAGFlow to `dev-slim`/`dev`, the most recent, tested Docker image
 
+`dev-slim` refers to the RAGFlow Docker image *without* embedding models, while `dev` refers to the RAGFlow Docker image with embedding models. For details on their differences, see **docker/.env**.
 
-## 1. Update RAGFLOW_IMAGE
+1. Clone the repo
 
-Update **ragflow/docker/.env** as follows:
+   ```bash
+   git clone https://github.com/infiniflow/ragflow.git
+   ```
+
+2. Update **ragflow/docker/.env**:
 
 <Tabs
-  defaultValue="dev"
+  defaultValue="dev-slim"
   values={[
-    {label: 'Upgrade RAGFlow to the dev version', value: 'dev'},
-    {label: 'Upgrade RAGFlow to the latest version', value: 'latest'}
+    {label: 'dev-slim', value: 'dev-slim'},
+    {label: 'dev', value: 'dev'},
   ]}>
-  <TabItem value="dev">
+  <TabItem value="dev-slim">
 
-:::danger IMPORTANT
-The Dev version (Development version) is the latest, tested Docker image of RAGFlow.
-:::
+```bash
+RAGFLOW_IMAGE=infiniflow/ragflow:dev-slim
+```
+
+  </TabItem>
+  <TabItem value="dev">
 
 ```bash
 RAGFLOW_IMAGE=infiniflow/ragflow:dev
 ```
 
   </TabItem>
-  <TabItem value="latest">
-
-:::danger IMPORTANT
-The latest version is the most recent, officially published release. For example, `v0.13.0`.
-:::
-
-```bash
-RAGFLOW_IMAGE=infiniflow/ragflow:latest
-```
-
-  </TabItem>
 </Tabs>
 
-## 2. Pull the latest code
+3. Update RAGFlow image and restart RAGFlow:
 
-Pull the latest code from inside Docker:
+   ```bash
+   docker compose -f docker/docker-compose.yml pull
+   docker compose -f docker/docker-compose.yml up -d
+   ```
 
-```bash
-git pull
-```
+## Upgrade RAGFlow to the most recent, officially published release
 
-## 3. Update RAGFlow image and restart RAGFlow
+1. Clone the repo
 
-```bash
-docker compose -f docker/docker-compose.yml pull
-docker compose -f docker/docker-compose.yml up -d
-```
+   ```bash
+   git clone https://github.com/infiniflow/ragflow.git
+   ```
+
+2. Switch to the latest, officially published release, e.g., `v0.14.0`:
+
+   ```bash
+   git checkout v0.14.0
+   ```
+
+3. Update **ragflow/docker/.env** as follows:
+
+   ```bash
+   RAGFLOW_IMAGE=infiniflow/ragflow:v0.14.0
+   ```
+
+4. Update the RAGFlow image and restart RAGFlow:
+
+   ```bash
+   docker compose -f docker/docker-compose.yml pull
+   docker compose -f docker/docker-compose.yml up -d
+   ```

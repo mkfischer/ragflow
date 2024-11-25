@@ -4,9 +4,10 @@ import re
 import json
 import time
 import infinity
-from infinity.common import ConflictType, InfinityException
+from infinity.common import ConflictType, InfinityException, SortType
 from infinity.index import IndexInfo, IndexType
 from infinity.connection_pool import ConnectionPool
+from infinity.errors import ErrorCode
 from rag import settings
 from rag.utils import singleton
 import polars as pl
@@ -21,6 +22,7 @@ from rag.utils.doc_store_conn import (
     FusionExpr,
     OrderByExpr,
 )
+
 
 def equivalent_condition_to_str(condition: dict) -> str:
     assert "_id" not in condition
@@ -46,6 +48,17 @@ def equivalent_condition_to_str(condition: dict) -> str:
     return " AND ".join(cond)
 
 
+def concat_dataframes(df_list: list[pl.DataFrame], selectFields: list[str]) -> pl.DataFrame:
+    """
+    Concatenate multiple dataframes into one.
+    """
+    if df_list:
+        return pl.concat(df_list)
+    schema = dict()
+    for fieldnm in selectFields:
+        schema[fieldnm] = str
+    return pl.DataFrame(schema=schema)
+
 @singleton
 class InfinityConnection(DocStoreConnection):
     def __init__(self):
@@ -60,12 +73,15 @@ class InfinityConnection(DocStoreConnection):
             try:
                 connPool = ConnectionPool(infinity_uri)
                 inf_conn = connPool.get_conn()
-                _ = inf_conn.show_current_node()
+                res = inf_conn.show_current_node()
                 connPool.release_conn(inf_conn)
                 self.connPool = connPool
-                break
+                if res.error_code == ErrorCode.OK and res.server_status=="started":
+                    break
+                logging.warn(f"Infinity status: {res.server_status}. Waiting Infinity {infinity_uri} to be healthy.")
+                time.sleep(5)
             except Exception as e:
-                logging.warn(f"{str(e)}. Waiting Infinity {infinity_uri} to be healthy.")
+                logging.warning(f"{str(e)}. Waiting Infinity {infinity_uri} to be healthy.")
                 time.sleep(5)
         if self.connPool is None:
             msg = f"Infinity {infinity_uri} didn't become healthy in 120s."
@@ -88,10 +104,9 @@ class InfinityConnection(DocStoreConnection):
         inf_conn = self.connPool.get_conn()
         res = inf_conn.show_current_node()
         self.connPool.release_conn(inf_conn)
-        color = "green" if res.error_code == 0 else "red"
         res2 = {
             "type": "infinity",
-            "status": f"{res.role} {color}",
+            "status": "green" if res.error_code == 0 and res.server_status == "started" else "red",
             "error": res.error_msg,
         }
         return res2
@@ -168,7 +183,7 @@ class InfinityConnection(DocStoreConnection):
             self.connPool.release_conn(inf_conn)
             return True
         except Exception as e:
-            logging.warn(f"INFINITY indexExist {str(e)}")
+            logging.warning(f"INFINITY indexExist {str(e)}")
         return False
 
     """
@@ -176,16 +191,16 @@ class InfinityConnection(DocStoreConnection):
     """
 
     def search(
-        self,
-        selectFields: list[str],
-        highlightFields: list[str],
-        condition: dict,
-        matchExprs: list[MatchExpr],
-        orderBy: OrderByExpr,
-        offset: int,
-        limit: int,
-        indexNames: str|list[str],
-        knowledgebaseIds: list[str],
+            self,
+            selectFields: list[str],
+            highlightFields: list[str],
+            condition: dict,
+            matchExprs: list[MatchExpr],
+            orderBy: OrderByExpr,
+            offset: int,
+            limit: int,
+            indexNames: str | list[str],
+            knowledgebaseIds: list[str],
     ) -> list[dict] | pl.DataFrame:
         """
         TODO: Infinity doesn't provide highlight
@@ -219,8 +234,8 @@ class InfinityConnection(DocStoreConnection):
                 minimum_should_match = "0%"
                 if "minimum_should_match" in matchExpr.extra_options:
                     minimum_should_match = (
-                        str(int(matchExpr.extra_options["minimum_should_match"] * 100))
-                        + "%"
+                            str(int(matchExpr.extra_options["minimum_should_match"] * 100))
+                            + "%"
                     )
                     matchExpr.extra_options.update(
                         {"minimum_should_match": minimum_should_match}
@@ -234,10 +249,14 @@ class InfinityConnection(DocStoreConnection):
                 for k, v in matchExpr.extra_options.items():
                     if not isinstance(v, str):
                         matchExpr.extra_options[k] = str(v)
+
+        order_by_expr_list = list()
         if orderBy.fields:
-            order_by_expr_list = list()
             for order_field in orderBy.fields:
-                order_by_expr_list.append((order_field[0], order_field[1] == 0))
+                if order_field[1] == 0:
+                    order_by_expr_list.append((order_field[0], SortType.Asc))
+                else:
+                    order_by_expr_list.append((order_field[0], SortType.Desc))
 
         # Scatter search tables and gather the results
         for indexName in indexNames:
@@ -249,40 +268,44 @@ class InfinityConnection(DocStoreConnection):
                     continue
                 table_list.append(table_name)
                 builder = table_instance.output(selectFields)
-                for matchExpr in matchExprs:
-                    if isinstance(matchExpr, MatchTextExpr):
-                        fields = ",".join(matchExpr.fields)
-                        builder = builder.match_text(
-                            fields,
-                            matchExpr.matching_text,
-                            matchExpr.topn,
-                            matchExpr.extra_options,
-                        )
-                    elif isinstance(matchExpr, MatchDenseExpr):
-                        builder = builder.match_dense(
-                            matchExpr.vector_column_name,
-                            matchExpr.embedding_data,
-                            matchExpr.embedding_data_type,
-                            matchExpr.distance_type,
-                            matchExpr.topn,
-                            matchExpr.extra_options,
-                        )
-                    elif isinstance(matchExpr, FusionExpr):
-                        builder = builder.fusion(
-                            matchExpr.method, matchExpr.topn, matchExpr.fusion_params
-                        )
+                if len(matchExprs) > 0:
+                    for matchExpr in matchExprs:
+                        if isinstance(matchExpr, MatchTextExpr):
+                            fields = ",".join(matchExpr.fields)
+                            builder = builder.match_text(
+                                fields,
+                                matchExpr.matching_text,
+                                matchExpr.topn,
+                                matchExpr.extra_options,
+                            )
+                        elif isinstance(matchExpr, MatchDenseExpr):
+                            builder = builder.match_dense(
+                                matchExpr.vector_column_name,
+                                matchExpr.embedding_data,
+                                matchExpr.embedding_data_type,
+                                matchExpr.distance_type,
+                                matchExpr.topn,
+                                matchExpr.extra_options,
+                            )
+                        elif isinstance(matchExpr, FusionExpr):
+                            builder = builder.fusion(
+                                matchExpr.method, matchExpr.topn, matchExpr.fusion_params
+                            )
+                else:
+                    if len(filter_cond) > 0:
+                        builder.filter(filter_cond)
                 if orderBy.fields:
                     builder.sort(order_by_expr_list)
                 builder.offset(offset).limit(limit)
                 kb_res = builder.to_pl()
                 df_list.append(kb_res)
         self.connPool.release_conn(inf_conn)
-        res = pl.concat(df_list)
+        res = concat_dataframes(df_list, selectFields)
         logging.debug("INFINITY search tables: " + str(table_list))
         return res
 
     def get(
-        self, chunkId: str, indexName: str, knowledgebaseIds: list[str]
+            self, chunkId: str, indexName: str, knowledgebaseIds: list[str]
     ) -> dict | None:
         inf_conn = self.connPool.get_conn()
         db_instance = inf_conn.get_database(self.dbName)
@@ -294,12 +317,12 @@ class InfinityConnection(DocStoreConnection):
             kb_res = table_instance.output(["*"]).filter(f"id = '{chunkId}'").to_pl()
             df_list.append(kb_res)
         self.connPool.release_conn(inf_conn)
-        res = pl.concat(df_list)
+        res = concat_dataframes(df_list, ["id"])
         res_fields = self.getFields(res, res.columns)
         return res_fields.get(chunkId, None)
 
     def insert(
-        self, documents: list[dict], indexName: str, knowledgebaseId: str
+            self, documents: list[dict], indexName: str, knowledgebaseId: str
     ) -> list[str]:
         inf_conn = self.connPool.get_conn()
         db_instance = inf_conn.get_database(self.dbName)
@@ -341,7 +364,7 @@ class InfinityConnection(DocStoreConnection):
         return []
 
     def update(
-        self, condition: dict, newValue: dict, indexName: str, knowledgebaseId: str
+            self, condition: dict, newValue: dict, indexName: str, knowledgebaseId: str
     ) -> bool:
         # if 'position_list' in newValue:
         #     logging.info(f"upsert position_list: {newValue['position_list']}")
@@ -430,7 +453,7 @@ class InfinityConnection(DocStoreConnection):
                         flags=re.IGNORECASE | re.MULTILINE,
                     )
                 if not re.search(
-                    r"<em>[^<>]+</em>", t, flags=re.IGNORECASE | re.MULTILINE
+                        r"<em>[^<>]+</em>", t, flags=re.IGNORECASE | re.MULTILINE
                 ):
                     continue
                 txts.append(t)

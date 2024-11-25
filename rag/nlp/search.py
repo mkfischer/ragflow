@@ -56,12 +56,12 @@ class Dealer:
             if key in req and req[key] is not None:
                 condition[field] = req[key]
         # TODO(yzc): `available_int` is nullable however infinity doesn't support nullable columns.
-        for key in ["knowledge_graph_kwd"]:
+        for key in ["knowledge_graph_kwd", "available_int"]:
             if key in req and req[key] is not None:
                 condition[key] = req[key]
         return condition
 
-    def search(self, req, idx_names: list[str], kb_ids: list[str], emb_mdl=None, highlight = False):
+    def search(self, req, idx_names: str | list[str], kb_ids: list[str], emb_mdl=None, highlight = False):
         filters = self.get_filters(req)
         orderBy = OrderByExpr()
 
@@ -106,8 +106,7 @@ class Dealer:
                 # If result is empty, try again with lower min_match
                 if total == 0:
                     matchText, _ = self.qryr.question(qst, min_match=0.1)
-                    if "doc_ids" in filters:
-                        del filters["doc_ids"]
+                    filters.pop("doc_ids", None)
                     matchDense.extra_options["similarity"] = 0.17
                     res = self.dataStore.search(src, highlightFields, filters, [matchText, matchDense, fusionExpr], orderBy, offset, limit, idx_names, kb_ids)
                     total=self.dataStore.getTotal(res)

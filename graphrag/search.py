@@ -23,7 +23,7 @@ from rag.nlp.search import Dealer
 
 
 class KGSearch(Dealer):
-    def search(self, req, idxnm, kb_ids, emb_mdl, highlight=False):
+    def search(self, req, idxnm: str | list[str], kb_ids: list[str], emb_mdl=None, highlight=False):
         def merge_into_first(sres, title="") -> dict[str, str]:
             if not sres:
                 return {}
@@ -67,7 +67,7 @@ class KGSearch(Dealer):
 
         ent_res = self.dataStore.search(src, list(), condition, [matchText, matchDense, fusionExpr], OrderByExpr(), 0, 32, idxnm, kb_ids)
         ent_res_fields = self.dataStore.getFields(ent_res, src)
-        entities = [d.get["name_kwd"] for d in ent_res_fields.values() if d.get("name_kwd")]
+        entities = [d["name_kwd"] for d in ent_res_fields.values() if d.get("name_kwd")]
         ent_ids = self.dataStore.getChunkIds(ent_res)
         ent_content = merge_into_first(ent_res_fields, "-Entities-")
         if ent_content:

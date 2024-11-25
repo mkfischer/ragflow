@@ -170,9 +170,12 @@ def switch():
         e, doc = DocumentService.get_by_id(req["doc_id"])
         if not e:
             return get_data_error_result(message="Document not found!")
-        if not settings.docStoreConn.update({"id": req["chunk_ids"]}, {"available_int": int(req["available_int"])},
-                                            search.index_name(doc.tenant_id), doc.kb_id):
-            return get_data_error_result(message="Index updating failure")
+        for cid in req["chunk_ids"]:
+            if not settings.docStoreConn.update({"id": cid},
+                                                {"available_int": int(req["available_int"])},
+                                                search.index_name(DocumentService.get_tenant_id(req["doc_id"])),
+                                                doc.kb_id):
+                return get_data_error_result(message="Index updating failure")
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
@@ -255,6 +258,7 @@ def retrieval_test():
     similarity_threshold = float(req.get("similarity_threshold", 0.0))
     vector_similarity_weight = float(req.get("vector_similarity_weight", 0.3))
     top = int(req.get("top_k", 1024))
+    tenant_ids = []
 
     try:
         tenants = UserTenantService.query(user_id=current_user.id)
@@ -262,6 +266,7 @@ def retrieval_test():
             for tenant in tenants:
                 if KnowledgebaseService.query(
                         tenant_id=tenant.tenant_id, id=kb_id):
+                    tenant_ids.append(tenant.tenant_id)
                     break
             else:
                 return get_json_result(
@@ -283,12 +288,11 @@ def retrieval_test():
             question += keyword_extraction(chat_mdl, question)
 
         retr = settings.retrievaler if kb.parser_id != ParserType.KG else settings.kg_retrievaler
-        ranks = retr.retrieval(question, embd_mdl, kb.tenant_id, kb_ids, page, size,
+        ranks = retr.retrieval(question, embd_mdl, tenant_ids, kb_ids, page, size,
                                similarity_threshold, vector_similarity_weight, top,
                                doc_ids, rerank_mdl=rerank_mdl, highlight=req.get("highlight"))
         for c in ranks["chunks"]:
-            if "vector" in c:
-                del c["vector"]
+            c.pop("vector", None)
 
         return get_json_result(data=ranks)
     except Exception as e:

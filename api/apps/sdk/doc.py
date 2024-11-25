@@ -37,7 +37,6 @@ from api.db.services.document_service import DocumentService
 from api.db.services.file2document_service import File2DocumentService
 from api.db.services.file_service import FileService
 from api.db.services.knowledgebase_service import KnowledgebaseService
-from api import settings
 from api.utils.api_utils import construct_json_result, get_parser_config
 from rag.nlp import search
 from rag.utils import rmSpace
@@ -116,6 +115,7 @@ def upload(dataset_id, tenant_id):
             return get_result(
                 message="No file selected!", code=settings.RetCode.ARGUMENT_ERROR
             )
+    '''
     # total size
     total_size = 0
     for file_obj in file_objs:
@@ -128,6 +128,7 @@ def upload(dataset_id, tenant_id):
             message=f"Total file size exceeds 10MB limit! ({total_size / (1024 * 1024):.2f} MB)",
             code=settings.RetCode.ARGUMENT_ERROR,
         )
+    '''
     e, kb = KnowledgebaseService.get_by_id(dataset_id)
     if not e:
         raise LookupError(f"Can't find the dataset with ID {dataset_id}!")
@@ -1342,8 +1343,7 @@ def retrieval_test(tenant_id):
             highlight=highlight,
         )
         for c in ranks["chunks"]:
-            if "vector" in c:
-                del c["vector"]
+            c.pop("vector", None)
 
         ##rename keys
         renamed_chunks = []

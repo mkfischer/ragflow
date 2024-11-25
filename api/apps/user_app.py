@@ -518,6 +518,7 @@ def user_register(user_id, user):
                 "model_type": llm.model_type,
                 "api_key": settings.API_KEY,
                 "api_base": settings.LLM_BASE_URL,
+                "max_tokens": llm.max_tokens if llm.max_tokens else 8192
             }
         )
 
@@ -696,8 +697,7 @@ def set_tenant_info():
     """
     req = request.json
     try:
-        tid = req["tenant_id"]
-        del req["tenant_id"]
+        tid = req.pop("tenant_id")
         TenantService.update_by_id(tid, req)
         return get_json_result(data=True)
     except Exception as e:

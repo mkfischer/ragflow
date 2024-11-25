@@ -162,14 +162,13 @@ def rm():
                     message="Database error (Document removal)!")
             f2d = File2DocumentService.get_by_document_id(doc.id)
             FileService.filter_delete([File.source_type == FileSource.KNOWLEDGEBASE, File.id == f2d[0].file_id])
+            FileService.filter_delete([File.source_type == FileSource.KNOWLEDGEBASE, File.type == "folder", File.name == kbs[0].name])
             File2DocumentService.delete_by_document_id(doc.id)
 
         if not KnowledgebaseService.delete_by_id(req["kb_id"]):
             return get_data_error_result(
                 message="Database error (Knowledgebase removal)!")
-        tenants = UserTenantService.query(user_id=current_user.id)
-        for tenant in tenants:
-            settings.docStoreConn.deleteIdx(search.index_name(tenant.tenant_id), req["kb_id"])
+        settings.docStoreConn.delete({"kb_id": req["kb_id"]}, search.index_name(kbs[0].tenant_id), req["kb_id"])
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
