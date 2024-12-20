@@ -95,7 +95,8 @@ class RewriteQuestion(Generate, ABC):
         hist = self._canvas.get_history(4)
         conv = []
         for m in hist:
-            if m["role"] not in ["user", "assistant"]: continue
+            if m["role"] not in ["user", "assistant"]:
+                continue
             conv.append("{}: {}".format(m["role"].upper(), m["content"]))
         conv = "\n".join(conv)
 
@@ -107,5 +108,6 @@ class RewriteQuestion(Generate, ABC):
 
         logging.debug(ans)
         return RewriteQuestion.be_output(ans)
+
 
 

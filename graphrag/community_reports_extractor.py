@@ -15,6 +15,7 @@ import networkx as nx
 import pandas as pd
 from graphrag import leiden
 from graphrag.community_report_prompt import COMMUNITY_REPORT_PROMPT
+from graphrag.extractor import Extractor
 from graphrag.leiden import add_community_info2graph
 from rag.llm.chat_model import Base as CompletionLLM
 from graphrag.utils import ErrorHandlerFn, perform_variable_replacements, dict_has_keys_with_types
@@ -30,10 +31,9 @@ class CommunityReportsResult:
     structured_output: list[dict]
 
 
-class CommunityReportsExtractor:
+class CommunityReportsExtractor(Extractor):
     """Community reports extractor class definition."""
 
-    _llm: CompletionLLM
     _extraction_prompt: str
     _output_formatter_prompt: str
     _on_error: ErrorHandlerFn
@@ -74,7 +74,7 @@ class CommunityReportsExtractor:
                 text = perform_variable_replacements(self._extraction_prompt, variables=prompt_variables)
                 gen_conf = {"temperature": 0.3}
                 try:
-                    response = self._llm.chat(text, [{"role": "user", "content": "Output:"}], gen_conf)
+                    response = self._chat(text, [{"role": "user", "content": "Output:"}], gen_conf)
                     token_count += num_tokens_from_string(text + response)
                     response = re.sub(r"^[^\{]*", "", response)
                     response = re.sub(r"[^\}]*$", "", response)
@@ -88,7 +88,8 @@ class CommunityReportsExtractor:
                                 ("findings", list),
                                 ("rating", float),
                                 ("rating_explanation", str),
-                            ]): continue
+                            ]):
+                        continue
                     response["weight"] = weight
                     response["entities"] = ents
                 except Exception as e:
@@ -100,7 +101,8 @@ class CommunityReportsExtractor:
                 res_str.append(self._get_text_output(response))
                 res_dict.append(response)
                 over += 1
-                if callback: callback(msg=f"Communities: {over}/{total}, elapsed: {timer() - st}s, used tokens: {token_count}")
+                if callback:
+                    callback(msg=f"Communities: {over}/{total}, elapsed: {timer() - st}s, used tokens: {token_count}")
 
         return CommunityReportsResult(
             structured_output=res_dict,

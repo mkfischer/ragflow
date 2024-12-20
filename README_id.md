@@ -20,7 +20,7 @@
         <img alt="Lencana Daring" src="https://img.shields.io/badge/Online-Demo-4e6b99">
     </a>
     <a href="https://hub.docker.com/r/infiniflow/ragflow" target="_blank">
-        <img src="https://img.shields.io/badge/docker_pull-ragflow:v0.14.0-brightgreen" alt="docker pull infiniflow/ragflow:v0.14.0">
+        <img src="https://img.shields.io/badge/docker_pull-ragflow:v0.15.0-brightgreen" alt="docker pull infiniflow/ragflow:v0.15.0">
     </a>
     <a href="https://github.com/infiniflow/ragflow/releases/latest">
         <img src="https://img.shields.io/github/v/release/infiniflow/ragflow?color=blue&label=Rilis%20Terbaru" alt="Rilis Terbaru">
@@ -72,11 +72,12 @@ Coba demo kami di [https://demo.ragflow.io](https://demo.ragflow.io).
 
 ## 🔥 Pembaruan Terbaru
 
-- 22-11-2024 Peningkatan definisi dan penggunaan variabel di Agen.
-- 2024-11-01: Penambahan ekstraksi kata kunci dan pembuatan pertanyaan terkait untuk meningkatkan akurasi pengambilan.
-- 2024-09-13: Penambahan mode pencarian untuk Q&A basis pengetahuan.
-- 2024-08-22: Dukungan untuk teks ke pernyataan SQL melalui RAG.
-- 2024-08-02: Dukungan GraphRAG yang terinspirasi oleh [graphrag](https://github.com/microsoft/graphrag) dan mind map.
+- 2024-12-18 Meningkatkan model Analisis Tata Letak Dokumen di Deepdoc.
+- 2024-12-04 Mendukung skor pagerank ke basis pengetahuan.
+- 2024-11-22 Peningkatan definisi dan penggunaan variabel di Agen.
+- 2024-11-01 Penambahan ekstraksi kata kunci dan pembuatan pertanyaan terkait untuk meningkatkan akurasi pengambilan.
+- 2024-08-22 Dukungan untuk teks ke pernyataan SQL melalui RAG.
+- 2024-08-02 Dukungan GraphRAG yang terinspirasi oleh [graphrag](https://github.com/microsoft/graphrag) dan mind map.
 
 ## 🎉 Tetap Terkini
 
@@ -160,26 +161,19 @@ Coba demo kami di [https://demo.ragflow.io](https://demo.ragflow.io).
 
 3. Bangun image Docker pre-built dan jalankan server:
 
-   > Perintah di bawah ini akan mengunduh versi dev dari Docker image RAGFlow slim (`dev-slim`). Image RAGFlow slim
-   tidak termasuk model embedding atau library Python dan berukuran sekitar 1GB.
+   > Perintah di bawah ini mengunduh edisi v0.15.0-slim dari gambar Docker RAGFlow. Silakan merujuk ke tabel berikut untuk deskripsi berbagai edisi RAGFlow. Untuk mengunduh edisi RAGFlow yang berbeda dari v0.15.0-slim, perbarui variabel RAGFLOW_IMAGE di docker/.env sebelum menggunakan docker compose untuk memulai server. Misalnya, atur RAGFLOW_IMAGE=infiniflow/ragflow:v0.15.0 untuk edisi lengkap v0.15.0.
 
    ```bash
-   $ cd ragflow/docker
-   $ docker compose -f docker-compose.yml up -d
+   $ cd ragflow
+   $ docker compose -f docker/docker-compose.yml up -d
    ```
 
-   > - Untuk mengunduh versi tertentu dari image Docker RAGFlow slim, perbarui variabel `RAGFlow_IMAGE` di *
-       *docker/.env** sesuai dengan versi yang diinginkan. Misalnya, `RAGFLOW_IMAGE=infiniflow/ragflow:v0.14.0-slim`.
-       Setelah mengubah ini, jalankan ulang perintah di atas untuk memulai unduhan.
-   > - Untuk mengunduh versi dev dari image Docker RAGFlow *termasuk* model embedding dan library Python, perbarui
-       variabel `RAGFlow_IMAGE` di **docker/.env** menjadi `RAGFLOW_IMAGE=infiniflow/ragflow:dev`. Setelah mengubah ini,
-       jalankan ulang perintah di atas untuk memulai unduhan.
-   > - Untuk mengunduh versi tertentu dari image Docker RAGFlow *termasuk* model embedding dan library Python, perbarui
-       variabel `RAGFlow_IMAGE` di **docker/.env** sesuai dengan versi yang diinginkan. Misalnya,
-       `RAGFLOW_IMAGE=infiniflow/ragflow:v0.14.0`. Setelah mengubah ini, jalankan ulang perintah di atas untuk memulai unduhan.
-
-   > **CATATAN:** Image Docker RAGFlow yang mencakup model embedding dan library Python berukuran sekitar 9GB
-   dan mungkin memerlukan waktu lebih lama untuk dimuat.
+   | RAGFlow image tag | Image size (GB) | Has embedding models? | Stable?                  |
+   | ----------------- | --------------- | --------------------- | ------------------------ |
+   | v0.15.0           | &approx;9       | :heavy_check_mark:    | Stable release           |
+   | v0.15.0-slim      | &approx;2       | ❌                    | Stable release           |
+   | nightly           | &approx;9       | :heavy_check_mark:    | *Unstable* nightly build |
+   | nightly-slim      | &approx;2       | ❌                    | *Unstable* nightly build |
 
 4. Periksa status server setelah server aktif dan berjalan:
 
@@ -208,7 +202,7 @@ Coba demo kami di [https://demo.ragflow.io](https://demo.ragflow.io).
 5. Buka browser web Anda, masukkan alamat IP server Anda, dan login ke RAGFlow.
    > Dengan pengaturan default, Anda hanya perlu memasukkan `http://IP_DEVICE_ANDA` (**tanpa** nomor port) karena 
    port HTTP default `80` bisa dihilangkan saat menggunakan konfigurasi default.
-6. Dalam [service_conf.yaml](./docker/service_conf.yaml), pilih LLM factory yang diinginkan di `user_default_llm` dan perbarui
+6. Dalam [service_conf.yaml.template](./docker/service_conf.yaml.template), pilih LLM factory yang diinginkan di `user_default_llm` dan perbarui
    bidang `API_KEY` dengan kunci API yang sesuai.
 
    > Lihat [llm_api_key_setup](https://ragflow.io/docs/dev/llm_api_key_setup) untuk informasi lebih lanjut.
@@ -221,15 +215,8 @@ Untuk konfigurasi sistem, Anda perlu mengelola file-file berikut:
 
 - [.env](./docker/.env): Menyimpan pengaturan dasar sistem, seperti `SVR_HTTP_PORT`, `MYSQL_PASSWORD`, dan
   `MINIO_PASSWORD`.
-- [service_conf.yaml](./docker/service_conf.yaml): Mengonfigurasi aplikasi backend.
+- [service_conf.yaml.template](./docker/service_conf.yaml.template): Mengonfigurasi aplikasi backend.
 - [docker-compose.yml](./docker/docker-compose.yml): Sistem ini bergantung pada [docker-compose.yml](./docker/docker-compose.yml) untuk memulai.
-
-Anda harus memastikan bahwa perubahan pada file [.env](./docker/.env) sesuai dengan yang ada di file [service_conf.yaml](./docker/service_conf.yaml).
-
-> File [./docker/README](./docker/README.md) menyediakan penjelasan detail tentang pengaturan lingkungan dan konfigurasi aplikasi,
-> dan Anda DIWAJIBKAN memastikan bahwa semua pengaturan lingkungan yang tercantum di
-> [./docker/README](./docker/README.md) selaras dengan konfigurasi yang sesuai di
-> [service_conf.yaml](./docker/service_conf.yaml).
 
 Untuk memperbarui port HTTP default (80), buka [docker-compose.yml](./docker/docker-compose.yml) dan ubah `80:80`
 menjadi `<YOUR_SERVING_PORT>:80`.
@@ -242,14 +229,12 @@ Pembaruan konfigurasi ini memerlukan reboot semua kontainer agar efektif:
 
 ## 🔧 Membangun Docker Image tanpa Model Embedding
 
-Image ini berukuran sekitar 1 GB dan bergantung pada aplikasi LLM eksternal dan embedding.
+Image ini berukuran sekitar 2 GB dan bergantung pada aplikasi LLM eksternal dan embedding.
 
 ```bash
 git clone https://github.com/infiniflow/ragflow.git
 cd ragflow/
-pip3 install huggingface-hub nltk
-python3 download_deps.py
-docker build -f Dockerfile.slim -t infiniflow/ragflow:dev-slim .
+docker build --build-arg LIGHTEN=1 -f Dockerfile -t infiniflow/ragflow:nightly-slim .
 ```
 
 ## 🔧 Membangun Docker Image Termasuk Model Embedding
@@ -259,23 +244,21 @@ Image ini berukuran sekitar 9 GB. Karena sudah termasuk model embedding, ia hany
 ```bash
 git clone https://github.com/infiniflow/ragflow.git
 cd ragflow/
-pip3 install huggingface-hub nltk
-python3 download_deps.py
-docker build -f Dockerfile -t infiniflow/ragflow:dev .
+docker build -f Dockerfile -t infiniflow/ragflow:nightly .
 ```
 
 ## 🔨 Menjalankan Aplikasi dari untuk Pengembangan
 
 1. Instal Poetry, atau lewati langkah ini jika sudah terinstal:
    ```bash
-   curl -sSL https://install.python-poetry.org | python3 -
+   pipx install poetry
+   export POETRY_VIRTUALENVS_CREATE=true POETRY_VIRTUALENVS_IN_PROJECT=true
    ```
 
 2. Clone kode sumber dan instal dependensi Python:
    ```bash
    git clone https://github.com/infiniflow/ragflow.git
    cd ragflow/
-   export POETRY_VIRTUALENVS_CREATE=true POETRY_VIRTUALENVS_IN_PROJECT=true
    ~/.local/bin/poetry install --sync --no-root # install modul python RAGFlow
    ```
 
@@ -284,11 +267,10 @@ docker build -f Dockerfile -t infiniflow/ragflow:dev .
    docker compose -f docker/docker-compose-base.yml up -d
    ```
 
-   Tambahkan baris berikut ke `/etc/hosts` untuk memetakan semua host yang ditentukan di **docker/service_conf.yaml** ke `127.0.0.1`:
+   Tambahkan baris berikut ke `/etc/hosts` untuk memetakan semua host yang ditentukan di **conf/service_conf.yaml** ke `127.0.0.1`:
    ```
    127.0.0.1       es01 infinity mysql minio redis
    ```  
-   Di **docker/service_conf.yaml**, perbarui port mysql ke `5455` dan es ke `1200`, sesuai dengan yang ditentukan di **docker/.env**.
 
 4. Jika Anda tidak dapat mengakses HuggingFace, atur variabel lingkungan `HF_ENDPOINT` untuk menggunakan situs mirror:
 
@@ -307,9 +289,8 @@ docker build -f Dockerfile -t infiniflow/ragflow:dev .
    ```bash
    cd web
    npm install --force
-   ```  
-7. Konfigurasikan frontend untuk memperbarui `proxy.target` di **.umirc.ts** menjadi `http://127.0.0.1:9380`:
-8. Jalankan aplikasi frontend:
+   ```
+7. Jalankan aplikasi frontend:
    ```bash
    npm run dev 
    ```  

@@ -130,7 +130,7 @@ def is_continuous_field(cls: typing.Type) -> bool:
     for p in cls.__bases__:
         if p in CONTINUOUS_FIELD_TYPE:
             return True
-        elif p != Field and p != object:
+        elif p is not Field and p is not object:
             if is_continuous_field(p):
                 return True
     else:
@@ -703,6 +703,7 @@ class Knowledgebase(DataBaseModel):
         default=ParserType.NAIVE.value,
         index=True)
     parser_config = JSONField(null=False, default={"pages": [[1, 1000000]]})
+    pagerank = IntegerField(default=0, index=False)
     status = CharField(
         max_length=1,
         null=True,
@@ -854,6 +855,8 @@ class Task(DataBaseModel):
         help_text="process message",
         default="")
     retry_count = IntegerField(default=0)
+    digest = TextField(null=True, help_text="task digest", default="")
+    chunk_ids = LongTextField(null=True, help_text="chunk ids", default="")
 
 
 class Dialog(DataBaseModel):
@@ -933,6 +936,7 @@ class APIToken(DataBaseModel):
     token = CharField(max_length=255, null=False, index=True)
     dialog_id = CharField(max_length=32, null=False, index=True)
     source = CharField(max_length=16, null=True, help_text="none|agent|dialog", index=True)
+    beta = CharField(max_length=255, null=True, index=True)
 
     class Meta:
         db_table = "api_token"
@@ -947,7 +951,7 @@ class API4Conversation(DataBaseModel):
     reference = JSONField(null=True, default=[])
     tokens = IntegerField(default=0)
     source = CharField(max_length=16, null=True, help_text="none|agent|dialog", index=True)
-
+    dsl = JSONField(null=True, default={})
     duration = FloatField(default=0, index=True)
     round = IntegerField(default=0, index=True)
     thumb_up = IntegerField(default=0, index=True)
@@ -1067,6 +1071,37 @@ def migrate_db():
         try:
             migrate(
                 migrator.add_column("tenant_llm","max_tokens",IntegerField(default=8192,index=True))
+            )
+        except Exception:
+            pass
+        try:
+            migrate(
+                migrator.add_column("api_4_conversation","dsl",JSONField(null=True, default={}))
+            )
+        except Exception:
+            pass
+        try:
+            migrate(
+                migrator.add_column("knowledgebase", "pagerank", IntegerField(default=0, index=False))
+            )
+        except Exception:
+            pass
+        try:
+            migrate(
+                migrator.add_column("api_token", "beta", CharField(max_length=255, null=True, index=True))
+            )
+        except Exception:
+            pass
+        try:
+            migrate(
+                migrator.add_column("task", "digest", TextField(null=True, help_text="task digest", default=""))
+            )
+        except Exception:
+            pass
+
+        try:
+            migrate(
+                migrator.add_column("task", "chunk_ids", LongTextField(null=True, help_text="chunk ids", default=""))
             )
         except Exception:
             pass

@@ -7,11 +7,13 @@ slug: /upgrade_ragflow
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-Upgrade RAGFlow to `dev-slim`/`dev` or the latest, published release.
+Upgrade RAGFlow to `nightly-slim`/`nightly` or the latest, published release.
 
-## Upgrade RAGFlow to `dev-slim`/`dev`, the most recent, tested Docker image
+## Upgrade RAGFlow to `nightly-slim`/`nightly`, the most recent, tested Docker image
 
-`dev-slim` refers to the RAGFlow Docker image *without* embedding models, while `dev` refers to the RAGFlow Docker image with embedding models. For details on their differences, see **docker/.env**.
+`nightly-slim` refers to the RAGFlow Docker image *without* embedding models, while `nightly` refers to the RAGFlow Docker image with embedding models. For details on their differences, see [ragflow/docker/.env](https://github.com/infiniflow/ragflow/blob/main/docker/.env).
+
+To upgrade RAGFlow, you must upgrade **both** your code **and** your Docker image:
 
 1. Clone the repo
 
@@ -22,22 +24,22 @@ Upgrade RAGFlow to `dev-slim`/`dev` or the latest, published release.
 2. Update **ragflow/docker/.env**:
 
 <Tabs
-  defaultValue="dev-slim"
+  defaultValue="nightly-slim"
   values={[
-    {label: 'dev-slim', value: 'dev-slim'},
-    {label: 'dev', value: 'dev'},
+    {label: 'nightly-slim', value: 'nightly-slim'},
+    {label: 'nightly', value: 'nightly'},
   ]}>
-  <TabItem value="dev-slim">
+  <TabItem value="nightly-slim">
 
 ```bash
-RAGFLOW_IMAGE=infiniflow/ragflow:dev-slim
+RAGFLOW_IMAGE=infiniflow/ragflow:nightly-slim
 ```
 
   </TabItem>
-  <TabItem value="dev">
+  <TabItem value="nightly">
 
 ```bash
-RAGFLOW_IMAGE=infiniflow/ragflow:dev
+RAGFLOW_IMAGE=infiniflow/ragflow:nightly
 ```
 
   </TabItem>
@@ -52,22 +54,24 @@ RAGFLOW_IMAGE=infiniflow/ragflow:dev
 
 ## Upgrade RAGFlow to the most recent, officially published release
 
+To upgrade RAGFlow, you must upgrade **both** your code **and** your Docker image:
+
 1. Clone the repo
 
    ```bash
    git clone https://github.com/infiniflow/ragflow.git
    ```
 
-2. Switch to the latest, officially published release, e.g., `v0.14.0`:
+2. Switch to the latest, officially published release, e.g., `v0.15.0`:
 
    ```bash
-   git checkout v0.14.0
+   git checkout -f v0.15.0
    ```
 
 3. Update **ragflow/docker/.env** as follows:
 
    ```bash
-   RAGFLOW_IMAGE=infiniflow/ragflow:v0.14.0
+   RAGFLOW_IMAGE=infiniflow/ragflow:v0.15.0
    ```
 
 4. Update the RAGFlow image and restart RAGFlow:

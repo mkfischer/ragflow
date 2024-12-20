@@ -23,6 +23,7 @@ from typing import Any
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
+from graphrag.extractor import Extractor
 from graphrag.mind_map_prompt import MIND_MAP_EXTRACTION_PROMPT
 from graphrag.utils import ErrorHandlerFn, perform_variable_replacements
 from rag.llm.chat_model import Base as CompletionLLM
@@ -37,8 +38,7 @@ class MindMapResult:
     output: dict
 
 
-class MindMapExtractor:
-    _llm: CompletionLLM
+class MindMapExtractor(Extractor):
     _input_text_key: str
     _mind_map_prompt: str
     _on_error: ErrorHandlerFn
@@ -88,26 +88,26 @@ class MindMapExtractor:
             prompt_variables = {}
 
         try:
-            max_workers = int(os.environ.get('MINDMAP_EXTRACTOR_MAX_WORKERS', 12))
-            exe = ThreadPoolExecutor(max_workers=max_workers)
-            threads = []
-            token_count = max(self._llm.max_length * 0.8, self._llm.max_length - 512)
-            texts = []
             res = []
-            cnt = 0
-            for i in range(len(sections)):
-                section_cnt = num_tokens_from_string(sections[i])
-                if cnt + section_cnt >= token_count and texts:
+            max_workers = int(os.environ.get('MINDMAP_EXTRACTOR_MAX_WORKERS', 12))
+            with ThreadPoolExecutor(max_workers=max_workers) as exe:
+                threads = []
+                token_count = max(self._llm.max_length * 0.8, self._llm.max_length - 512)
+                texts = []
+                cnt = 0
+                for i in range(len(sections)):
+                    section_cnt = num_tokens_from_string(sections[i])
+                    if cnt + section_cnt >= token_count and texts:
+                        threads.append(exe.submit(self._process_document, "".join(texts), prompt_variables))
+                        texts = []
+                        cnt = 0
+                    texts.append(sections[i])
+                    cnt += section_cnt
+                if texts:
                     threads.append(exe.submit(self._process_document, "".join(texts), prompt_variables))
-                    texts = []
-                    cnt = 0
-                texts.append(sections[i])
-                cnt += section_cnt
-            if texts:
-                threads.append(exe.submit(self._process_document, "".join(texts), prompt_variables))
 
-            for i, _ in enumerate(threads):
-                res.append(_.result())
+                for i, _ in enumerate(threads):
+                    res.append(_.result())
 
             if not res:
                 return MindMapResult(output={"id": "root", "children": []})
@@ -190,7 +190,7 @@ class MindMapExtractor:
         }
         text = perform_variable_replacements(self._mind_map_prompt, variables=variables)
         gen_conf = {"temperature": 0.5}
-        response = self._llm.chat(text, [{"role": "user", "content": "Output:"}], gen_conf)
+        response = self._chat(text, [{"role": "user", "content": "Output:"}], gen_conf)
         response = re.sub(r"```[^\n]*", "", response)
         logging.debug(response)
         logging.debug(self._todict(markdown_to_json.dictify(response)))

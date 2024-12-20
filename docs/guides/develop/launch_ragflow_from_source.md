@@ -38,7 +38,7 @@ cd ragflow/
 1. Install Poetry:
    
    ```bash
-   curl -sSL https://install.python-poetry.org | python3 -
+   pipx install poetry
    ```
 
 2. Configure Poetry:
@@ -48,9 +48,13 @@ cd ragflow/
    ```
 
 3. Install Python dependencies:
-
+   - slim:
    ```bash
    ~/.local/bin/poetry install --sync --no-root
+   ```
+   - full:
+   ```bash
+   ~/.local/bin/poetry install --sync --no-root --with full
    ```
    *A virtual environment named `.venv` is created, and all Python dependencies are installed into the new environment.*
 

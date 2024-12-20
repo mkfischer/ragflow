@@ -58,7 +58,7 @@ You can also change the chunk template for a particular file on the **Datasets**
 
 ### Select embedding model
 
-An embedding model converts chunks into embeddings. It cannot be changed once the knowledge base has chunks. To switch to a different embedding model, You must delete all chunks in the knowledge base. The obvious reason is that we *must* ensure that files in a specific knowledge base are converted to embeddings using the *same* embedding model (ensure that they are compared in the same embedding space).
+An embedding model converts chunks into embeddings. It cannot be changed once the knowledge base has chunks. To switch to a different embedding model, you must delete all existing chunks in the knowledge base. The obvious reason is that we *must* ensure that files in a specific knowledge base are converted to embeddings using the *same* embedding model (ensure that they are compared in the same embedding space).
 
 The following embedding models can be deployed locally:
 
@@ -103,7 +103,7 @@ RAGFlow features visibility and explainability, allowing you to view the chunkin
 
 2. Hover over each snapshot for a quick view of each chunk.
 
-3. Double click the chunked texts to add keywords or make *manual* changes where necessary:
+3. Double-click the chunked texts to add keywords or make *manual* changes where necessary:
 
    ![update chunk](https://github.com/infiniflow/ragflow/assets/93570324/1d84b408-4e9f-46fd-9413-8c1059bf9c76)
 
@@ -111,7 +111,7 @@ RAGFlow features visibility and explainability, allowing you to view the chunkin
 You can add keywords to a file chunk to increase its ranking for queries containing those keywords. This action increases its keyword weight and can improve its position in search list.  
 :::
 
-4. In Retrieval testing, ask a quick question in **Test text** to double check if your configurations work:
+4. In Retrieval testing, ask a quick question in **Test text** to double-check if your configurations work:
 
    _As you can tell from the following, RAGFlow responds with truthful citations._
 
@@ -128,7 +128,7 @@ RAGFlow uses multiple recall of both full-text search and vector search in its c
 
 ## Search for knowledge base
 
-As of RAGFlow v0.14.0, the search feature is still in a rudimentary form, supporting only knowledge base search by name.
+As of RAGFlow v0.15.0, the search feature is still in a rudimentary form, supporting only knowledge base search by name.
 
 ![search knowledge base](https://github.com/infiniflow/ragflow/assets/93570324/836ae94c-2438-42be-879e-c7ad2a59693e)
 

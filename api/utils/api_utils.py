@@ -36,7 +36,6 @@ from werkzeug.http import HTTP_STATUS_CODES
 from api.db.db_models import APIToken
 from api import settings
 
-from api import settings
 from api.utils import CustomJSONEncoder, get_uuid
 from api.utils import json_dumps
 from api.constants import REQUEST_WAIT_SEC, REQUEST_MAX_WAIT_SEC
@@ -174,6 +173,18 @@ def validate_request(*args, **kwargs):
 
     return wrapper
 
+def not_allowed_parameters(*params):
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            input_arguments = flask_request.json or flask_request.form.to_dict()
+            for param in params:
+                if param in input_arguments:
+                    return get_json_result(
+                        code=settings.RetCode.ARGUMENT_ERROR, message=f"Parameter {param} isn't allowed")
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
 
 def is_localhost(ip):
     return ip in {'127.0.0.1', '::1', '[::1]', 'localhost'}
@@ -272,7 +283,10 @@ def construct_error_response(e):
 def token_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        authorization_list=flask_request.headers.get('Authorization').split()
+        authorization_str=flask_request.headers.get('Authorization')
+        if not authorization_str:
+            return get_json_result(data=False,message="`Authorization` can't be empty")
+        authorization_list=authorization_str.split()
         if len(authorization_list) < 2:
             return get_json_result(data=False,message="Please check your authorization format.")
         token = authorization_list[1]

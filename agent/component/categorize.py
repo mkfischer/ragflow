@@ -34,15 +34,18 @@ class CategorizeParam(GenerateParam):
         super().check()
         self.check_empty(self.category_description, "[Categorize] Category examples")
         for k, v in self.category_description.items():
-            if not k: raise ValueError("[Categorize] Category name can not be empty!")
-            if not v.get("to"): raise ValueError(f"[Categorize] 'To' of category {k} can not be empty!")
+            if not k:
+                raise ValueError("[Categorize] Category name can not be empty!")
+            if not v.get("to"):
+                raise ValueError(f"[Categorize] 'To' of category {k} can not be empty!")
 
     def get_prompt(self):
         cate_lines = []
         for c, desc in self.category_description.items():
-            for l in desc.get("examples", "").split("\n"):
-                if not l: continue
-                cate_lines.append("Question: {}\tCategory: {}".format(l, c))
+            for line in desc.get("examples", "").split("\n"):
+                if not line:
+                    continue
+                cate_lines.append("Question: {}\tCategory: {}".format(line, c))
         descriptions = []
         for c, desc in self.category_description.items():
             if desc.get("description"):
@@ -84,4 +87,8 @@ class Categorize(Generate, ABC):
 
         return Categorize.be_output(list(self._param.category_description.items())[-1][1]["to"])
 
+    def debug(self, **kwargs):
+        df = self._run([], **kwargs)
+        cpn_id = df.iloc[0, 0]
+        return Categorize.be_output(self._canvas.get_compnent_name(cpn_id))
 

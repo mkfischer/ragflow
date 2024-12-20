@@ -26,7 +26,7 @@ from api.utils.api_utils import get_result
 
 
 
-@manager.route('/chats', methods=['POST'])
+@manager.route('/chats', methods=['POST'])  # noqa: F821
 @token_required
 def create(tenant_id):
     req=request.json
@@ -82,7 +82,8 @@ def create(tenant_id):
     req["top_k"] = req.get("top_k", 1024)
     req["rerank_id"] = req.get("rerank_id", "")
     if req.get("rerank_id"):
-        if not TenantLLMService.query(tenant_id=tenant_id,llm_name=req.get("rerank_id"),model_type="rerank"):
+        value_rerank_model = ["BAAI/bge-reranker-v2-m3","maidalun1020/bce-reranker-base_v1"]
+        if req["rerank_id"] not in value_rerank_model and not TenantLLMService.query(tenant_id=tenant_id,llm_name=req.get("rerank_id"),model_type="rerank"):
             return get_error_data_result(f"`rerank_model` {req.get('rerank_id')} doesn't exist")
     if not req.get("llm_id"):
         req["llm_id"] = tenant.llm_id
@@ -104,9 +105,12 @@ def create(tenant_id):
         "parameters": [
             {"key": "knowledge", "optional": False}
         ],
-        "empty_response": "Sorry! No relevant content was found in the knowledge base!"
+        "empty_response": "Sorry! No relevant content was found in the knowledge base!",
+        "quote":True,
+        "tts":False,
+        "refine_multiturn":True
     }
-    key_list_2 = ["system", "prologue", "parameters", "empty_response"]
+    key_list_2 = ["system", "prologue", "parameters", "empty_response","quote","tts","refine_multiturn"]
     if "prompt_config" not in req:
         req['prompt_config'] = {}
     for key in key_list_2:
@@ -147,7 +151,7 @@ def create(tenant_id):
     res["avatar"] = res.pop("icon")
     return get_result(data=res)
 
-@manager.route('/chats/<chat_id>', methods=['PUT'])
+@manager.route('/chats/<chat_id>', methods=['PUT'])  # noqa: F821
 @token_required
 def update(tenant_id,chat_id):
     if not DialogService.query(tenant_id=tenant_id, id=chat_id, status=StatusEnum.VALID.value):
@@ -158,10 +162,10 @@ def update(tenant_id,chat_id):
         req["do_refer"]=req.pop("show_quotation")
     if "dataset_ids" in req:
         if not ids:
-            return get_error_data_result("`datasets` can't be empty")
+            return get_error_data_result("`dataset_ids` can't be empty")
         if ids:
             for kb_id in ids:
-                kbs = KnowledgebaseService.accessible(kb_id=chat_id, user_id=tenant_id)
+                kbs = KnowledgebaseService.accessible(kb_id=kb_id, user_id=tenant_id)
                 if not kbs:
                     return get_error_data_result(f"You don't own the dataset {kb_id}")
                 kbs = KnowledgebaseService.query(id=kb_id)
@@ -185,9 +189,6 @@ def update(tenant_id,chat_id):
     e, tenant = TenantService.get_by_id(tenant_id)
     if not e:
         return get_error_data_result(message="Tenant not found!")
-    if req.get("rerank_model"):
-        if not TenantLLMService.query(tenant_id=tenant_id,llm_name=req.get("rerank_model"),model_type="rerank"):
-            return get_error_data_result(f"`rerank_model` {req.get('rerank_model')} doesn't exist")
     # prompt
     prompt = req.get("prompt")
     key_mapping = {"parameters": "variables",
@@ -207,6 +208,10 @@ def update(tenant_id,chat_id):
         req["prompt_config"] = req.pop("prompt")
     e, res = DialogService.get_by_id(chat_id)
     res = res.to_json()
+    if req.get("rerank_id"):
+        value_rerank_model = ["BAAI/bge-reranker-v2-m3","maidalun1020/bce-reranker-base_v1"]
+        if req["rerank_id"] not in value_rerank_model and not TenantLLMService.query(tenant_id=tenant_id,llm_name=req.get("rerank_id"),model_type="rerank"):
+            return get_error_data_result(f"`rerank_model` {req.get('rerank_id')} doesn't exist")
     if "name" in req:
         if not req.get("name"):
             return get_error_data_result(message="`name` is not empty.")
@@ -235,7 +240,7 @@ def update(tenant_id,chat_id):
     return get_result()
 
 
-@manager.route('/chats', methods=['DELETE'])
+@manager.route('/chats', methods=['DELETE'])  # noqa: F821
 @token_required
 def delete(tenant_id):
     req = request.json
@@ -257,14 +262,15 @@ def delete(tenant_id):
         DialogService.update_by_id(id, temp_dict)
     return get_result()
 
-@manager.route('/chats', methods=['GET'])
+@manager.route('/chats', methods=['GET'])  # noqa: F821
 @token_required
 def list_chat(tenant_id):
     id = request.args.get("id")
     name = request.args.get("name")
-    chat = DialogService.query(id=id,name=name,status=StatusEnum.VALID.value,tenant_id=tenant_id)
-    if not chat:
-        return get_error_data_result(message="The chat doesn't exist")
+    if id or name:
+        chat = DialogService.query(id=id, name=name, status=StatusEnum.VALID.value, tenant_id=tenant_id)
+        if not chat:
+            return get_error_data_result(message="The chat doesn't exist")
     page_number = int(request.args.get("page", 1))
     items_per_page = int(request.args.get("page_size", 30))
     orderby = request.args.get("orderby", "create_time")
