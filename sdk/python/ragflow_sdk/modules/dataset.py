@@ -22,6 +22,7 @@ from .base import Base
 class DataSet(Base):
     class ParserConfig(Base):
         def __init__(self, rag, res_dict):
+            self.chunk_token_num = None
             super().__init__(rag, res_dict)
 
     def __init__(self, rag, res_dict):
