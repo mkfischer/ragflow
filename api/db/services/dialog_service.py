@@ -34,6 +34,7 @@ from rag.prompts import kb_prompt, message_fit_in, llm_id2llm_type, keyword_extr
     citation_prompt
 from rag.utils import rmSpace, num_tokens_from_string
 from rag.utils.tavily_conn import Tavily
+import datetime
 
 
 class DialogService(CommonService):
@@ -234,6 +235,9 @@ def chat(dialog, messages, stream=True, **kwargs):
 
     kwargs["knowledge"] = "\n------\n" + "\n\n------\n\n".join(knowledges)
     gen_conf = dialog.llm_setting
+    
+    # Add today's date to kwargs
+    kwargs["todays_date"] = datetime.date.today().strftime("%Y-%m-%d")
 
     msg = [{"role": "system", "content": prompt_config["system"].format(**kwargs)}]
     prompt4citation = ""
@@ -491,7 +495,7 @@ def ask(question, kb_ids, tenant_id):
     Task: Summarize the information from knowledge bases and answer user's question.
     Requirements and restriction:
       - DO NOT make things up, especially for numbers.
-      - If the information from knowledge is irrelevant with user's question, JUST SAY: Sorry, no relevant information provided.
+      - If the information from knowledge from knowledge is irrelevant with user's question, JUST SAY: Sorry, no relevant information provided.
       - Answer with markdown format text.
       - Answer in language of user's question.
       - DO NOT make things up, especially for numbers.
