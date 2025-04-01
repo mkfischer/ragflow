@@ -42,3 +42,22 @@ nltk_data/
 # Exclude hash-like temporary files like 9b5ad71b2ce5302211f9c61530b329a4922fc6a4
 *[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*
 .lh/
+.aider*
+Dockerfile
+docker/.env
+docker/docker-compose-macos.yml
+pyproject.toml
+Dockerfile.bak
+chrome-linux64-121-0-6167-85
+chromedriver-linux64-121-0-6167-85
+cl100k_base.tiktoken
+docker/docker-compose-macos.yml.bak
+docker/env.bak
+fork_update_report.txt
+libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+libssl1.1_1.1.1f-1ubuntu2_arm64.deb
+pyproject.toml.bak
+test_file.txt
+tika-server-standard-3.0.0.jar
+tika-server-standard-3.0.0.jar.md5
+web/src/conf.json.bak
