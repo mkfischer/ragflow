@@ -80,3 +80,15 @@ redis:
 #   switch: false
 #   component: false
 #   dataset: false
+# BEGIN ANSIBLE MANAGED BLOCK - user_default_llm
+user_default_llm:
+  factory: "Ollama"
+  api_key: "NoneNeeded"
+  base_url: "http://localhost:11434"
+  default_models:
+    chat_model: "gemma3:27b"
+    embedding_model: "BAAI/bge-large-zh-v1.5@BAAI"
+    rerank_model: ""
+    asr_model: ""
+    image2text_model: ""
+# END ANSIBLE MANAGED BLOCK - user_default_llm
