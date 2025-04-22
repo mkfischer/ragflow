@@ -31,7 +31,7 @@ from api.utils.api_utils import get_error_data_result, token_required, get_resul
 @token_required
 def create(tenant_id):
     req = request.json
-    ids = [i for i in req.get("dataset_ids", []) if i] 
+    ids = [i for i in req.get("dataset_ids", []) if i]
     for kb_id in ids:
         kbs = KnowledgebaseService.accessible(kb_id=kb_id, user_id=tenant_id)
         if not kbs:
@@ -40,7 +40,7 @@ def create(tenant_id):
         kb = kbs[0]
         if kb.chunk_num == 0:
             return get_error_data_result(f"The dataset {kb_id} doesn't own parsed file")
-    
+
     kbs = KnowledgebaseService.get_by_ids(ids) if ids else []
     embd_ids = [TenantLLMService.split_model_name_and_factory(kb.embd_id)[0] for kb in kbs]  # remove vendor suffix for comparison
     embd_count = list(set(embd_ids))
@@ -108,6 +108,7 @@ def create(tenant_id):
         "prologue": "Hi! I'm your assistant, what can I do for you?",
         "parameters": [
             {"key": "knowledge", "optional": False}
+            {"key": "date", "optional": False}
         ],
         "empty_response": "Sorry! No relevant content was found in the knowledge base!",
         "quote": True,
@@ -177,7 +178,7 @@ def update(tenant_id, chat_id):
                 kb = kbs[0]
                 if kb.chunk_num == 0:
                     return get_error_data_result(f"The dataset {kb_id} doesn't own parsed file")
-                
+
             kbs = KnowledgebaseService.get_by_ids(ids)
             embd_ids = [TenantLLMService.split_model_name_and_factory(kb.embd_id)[0] for kb in kbs]  # remove vendor suffix for comparison
             embd_count = list(set(embd_ids))
@@ -276,7 +277,7 @@ def delete(tenant_id):
         temp_dict = {"status": StatusEnum.INVALID.value}
         DialogService.update_by_id(id, temp_dict)
         success_count += 1
-        
+
     if errors:
         if success_count > 0:
             return get_result(
@@ -285,16 +286,16 @@ def delete(tenant_id):
             )
         else:
             return get_error_data_result(message="; ".join(errors))
-    
+
     if duplicate_messages:
         if success_count > 0:
             return get_result(
-                message=f"Partially deleted {success_count} chats with {len(duplicate_messages)} errors", 
+                message=f"Partially deleted {success_count} chats with {len(duplicate_messages)} errors",
                 data={"success_count": success_count, "errors": duplicate_messages}
             )
         else:
             return get_error_data_result(message=";".join(duplicate_messages))
-    
+
     return get_result()
 
 
