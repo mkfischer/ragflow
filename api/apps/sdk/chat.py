@@ -135,6 +135,7 @@ def create(tenant_id):
         "prologue": "Hi! I'm your assistant, what can I do for you?",
         "parameters": [
             {"key": "knowledge", "optional": False},
+            {"key": "date", "optional": True}  # Set optional to True
         ],
         "empty_response": "Sorry! No relevant content was found in the knowledge base!",
         "quote": True,
