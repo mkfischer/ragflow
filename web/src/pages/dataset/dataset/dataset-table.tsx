@@ -14,6 +14,7 @@ import {
 import * as React from 'react';
 
 import { ChunkMethodDialog } from '@/components/chunk-method-dialog';
+import { RenameDialog } from '@/components/rename-dialog';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -23,31 +24,35 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useFetchNextDocumentList } from '@/hooks/document-hooks';
-import { useSetSelectedRecord } from '@/hooks/logic-hooks';
-import { IDocumentInfo } from '@/interfaces/database/document';
+import { UseRowSelectionType } from '@/hooks/logic-hooks/use-row-selection';
+import { useFetchDocumentList } from '@/hooks/use-document-request';
 import { getExtension } from '@/utils/document-util';
 import { useMemo } from 'react';
-import { useChangeDocumentParser } from './hooks';
+import { SetMetaDialog } from './set-meta-dialog';
+import { useChangeDocumentParser } from './use-change-document-parser';
 import { useDatasetTableColumns } from './use-dataset-table-columns';
+import { useRenameDocument } from './use-rename-document';
+import { useSaveMeta } from './use-save-meta';
 
-export function DatasetTable() {
-  const {
-    // searchString,
-    documents,
-    pagination,
-    // handleInputChange,
-    setPagination,
-  } = useFetchNextDocumentList();
+export type DatasetTableProps = Pick<
+  ReturnType<typeof useFetchDocumentList>,
+  'documents' | 'setPagination' | 'pagination'
+> &
+  Pick<UseRowSelectionType, 'rowSelection' | 'setRowSelection'>;
+
+export function DatasetTable({
+  documents,
+  pagination,
+  setPagination,
+  rowSelection,
+  setRowSelection,
+}: DatasetTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({});
-
-  const { currentRecord, setRecord } = useSetSelectedRecord<IDocumentInfo>();
 
   const {
     changeParserLoading,
@@ -55,11 +60,31 @@ export function DatasetTable() {
     changeParserVisible,
     hideChangeParserModal,
     showChangeParserModal,
-  } = useChangeDocumentParser(currentRecord.id);
+    changeParserRecord,
+  } = useChangeDocumentParser();
+
+  const {
+    renameLoading,
+    onRenameOk,
+    renameVisible,
+    hideRenameModal,
+    showRenameModal,
+    initialName,
+  } = useRenameDocument();
+
+  const {
+    showSetMetaModal,
+    hideSetMetaModal,
+    setMetaVisible,
+    setMetaLoading,
+    onSetMetaModalOk,
+    metaRecord,
+  } = useSaveMeta();
 
   const columns = useDatasetTableColumns({
     showChangeParserModal,
-    setCurrentRecord: setRecord,
+    showRenameModal,
+    showSetMetaModal,
   });
 
   const currentPagination = useMemo(() => {
@@ -186,15 +211,34 @@ export function DatasetTable() {
       </div>
       {changeParserVisible && (
         <ChunkMethodDialog
-          documentId={currentRecord.id}
-          parserId={currentRecord.parser_id}
-          parserConfig={currentRecord.parser_config}
-          documentExtension={getExtension(currentRecord.name)}
+          documentId={changeParserRecord.id}
+          parserId={changeParserRecord.parser_id}
+          parserConfig={changeParserRecord.parser_config}
+          documentExtension={getExtension(changeParserRecord.name)}
           onOk={onChangeParserOk}
           visible={changeParserVisible}
           hideModal={hideChangeParserModal}
           loading={changeParserLoading}
         ></ChunkMethodDialog>
+      )}
+
+      {renameVisible && (
+        <RenameDialog
+          visible={renameVisible}
+          onOk={onRenameOk}
+          loading={renameLoading}
+          hideModal={hideRenameModal}
+          initialName={initialName}
+        ></RenameDialog>
+      )}
+
+      {setMetaVisible && (
+        <SetMetaDialog
+          hideModal={hideSetMetaModal}
+          loading={setMetaLoading}
+          onOk={onSetMetaModalOk}
+          initialMetaData={metaRecord.meta_fields}
+        ></SetMetaDialog>
       )}
     </div>
   );

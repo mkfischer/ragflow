@@ -19,6 +19,7 @@ from enum import IntEnum, Enum
 import json
 import rag.utils.es_conn
 import rag.utils.infinity_conn
+import rag.utils.opensearch_coon
 
 import rag.utils
 from rag.nlp import search
@@ -55,7 +56,7 @@ CLIENT_AUTHENTICATION = None
 HTTP_APP_KEY = None
 GITHUB_OAUTH = None
 FEISHU_OAUTH = None
-
+OAUTH_CONFIG = None
 DOC_ENGINE = None
 docStoreConn = None
 
@@ -118,7 +119,7 @@ def init_settings():
         RAG_FLOW_SERVICE_NAME,
         {}).get("secret_key", str(date.today()))
 
-    global AUTHENTICATION_CONF, CLIENT_AUTHENTICATION, HTTP_APP_KEY, GITHUB_OAUTH, FEISHU_OAUTH
+    global AUTHENTICATION_CONF, CLIENT_AUTHENTICATION, HTTP_APP_KEY, GITHUB_OAUTH, FEISHU_OAUTH, OAUTH_CONFIG
     # authentication
     AUTHENTICATION_CONF = get_base_config("authentication", {})
 
@@ -130,13 +131,18 @@ def init_settings():
     GITHUB_OAUTH = get_base_config("oauth", {}).get("github")
     FEISHU_OAUTH = get_base_config("oauth", {}).get("feishu")
 
+    OAUTH_CONFIG = get_base_config("oauth", {})
+
     global DOC_ENGINE, docStoreConn, retrievaler, kg_retrievaler
     DOC_ENGINE = os.environ.get('DOC_ENGINE', "elasticsearch")
+    # DOC_ENGINE = os.environ.get('DOC_ENGINE', "opensearch")
     lower_case_doc_engine = DOC_ENGINE.lower()
     if lower_case_doc_engine == "elasticsearch":
         docStoreConn = rag.utils.es_conn.ESConnection()
     elif lower_case_doc_engine == "infinity":
         docStoreConn = rag.utils.infinity_conn.InfinityConnection()
+    elif lower_case_doc_engine == "opensearch":
+        docStoreConn = rag.utils.opensearch_coon.OSConnection()
     else:
         raise Exception(f"Not supported doc engine: {DOC_ENGINE}")
 
